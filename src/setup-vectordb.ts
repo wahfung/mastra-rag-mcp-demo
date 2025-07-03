@@ -5,7 +5,7 @@ dotenv.config();
 
 async function setupVectorDB() {
   console.log('🔧 设置向量数据库...');
-  console.log('🤖 配置: Mastra + DeepSeek AI (无 MCP 依赖)');
+  console.log('🤖 配置: Mastra + DeepSeek AI (完全无 MCP 依赖)');
   
   try {
     const vectorDB = new VectorDB({
@@ -20,7 +20,7 @@ async function setupVectorDB() {
     
     // 创建索引
     await vectorDB.createIndex({
-      name: 'mastra-rag-deepseek-demo',
+      name: 'mastra-rag-deepseek-clean',
       dimension: 1536, // OpenAI text-embedding-3-small 维度
       metric: 'cosine',
       metadata: {
@@ -28,16 +28,17 @@ async function setupVectorDB() {
         created: new Date().toISOString(),
         llm: 'deepseek-chat',
         embedder: 'text-embedding-3-small',
-        dependencies: 'no-modelcontextprotocol'
+        dependencies: 'NO-modelcontextprotocol',
+        clean: true
       }
     });
 
     console.log('✅ 向量数据库索引创建完成');
-    console.log('📊 索引名称: mastra-rag-deepseek-demo');
+    console.log('📊 索引名称: mastra-rag-deepseek-clean');
     console.log('📐 嵌入维度: 1536 (OpenAI)');
     console.log('🤖 LLM 模型: DeepSeek Chat');
     console.log('🎯 距离度量: cosine');
-    console.log('✨ 实现: 纯净版本（无 MCP SDK 依赖）');
+    console.log('✨ 实现: 纯净版本（完全无 modelcontextprotocol）');
     
   } catch (error) {
     console.error('❌ 向量数据库设置失败:', error);

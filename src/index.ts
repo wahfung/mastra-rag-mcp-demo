@@ -171,7 +171,8 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     model: 'deepseek-chat',
-    version: '1.0.0'
+    version: '1.0.0',
+    dependencies: 'no-modelcontextprotocol'
   });
 });
 
@@ -231,7 +232,8 @@ app.get('/tools', async (req, res) => {
     res.json({ 
       tools,
       model: 'deepseek-chat',
-      provider: '@ai-sdk/deepseek'
+      provider: '@ai-sdk/deepseek',
+      note: 'No modelcontextprotocol dependencies'
     });
   } catch (error) {
     res.status(500).json({ error: '获取工具列表失败' });
@@ -273,7 +275,7 @@ async function startServer() {
       console.log(`\n🤖 AI 模型: DeepSeek Chat`);
       console.log(`📦 提供商: @ai-sdk/deepseek`);
       console.log(`🔧 框架: Mastra + AI SDK`);
-      console.log(`✨ 状态: 无 modelcontextprotocol 依赖`);
+      console.log(`✨ 状态: 完全无 modelcontextprotocol 依赖`);
     });
   } catch (error) {
     console.error('服务器启动失败:', error);
