@@ -1,35 +1,36 @@
-# Mastra RAG Demo with DeepSeek
+# Mastra RAG Demo with Pure DeepSeek
 
-一个使用 **Mastra 框架 + DeepSeek AI** 构建的 RAG (Retrieval-Augmented Generation) 演示项目，展示了如何用国产 AI 模型实现智能问答和文档管理。
+一个使用 **Mastra 框架 + 纯 DeepSeek AI** 构建的 RAG (Retrieval-Augmented Generation) 演示项目，展示了如何用国产 AI 模型实现智能问答和文档管理。
 
 ## ✨ 技术亮点
 
 **🇨🇳 国产 AI + 现代框架**
 
-- 🤖 **DeepSeek AI** - 使用先进的国产大语言模型
+- 🤖 **Pure DeepSeek AI** - 使用先进的国产大语言模型，包括嵌入和对话
 - 🎯 **Pure Mastra** - 无冗余依赖，纯 Mastra 生态
 - 🔧 **AI SDK 集成** - 基于 Vercel AI SDK 的统一接口
 - 📦 **最小依赖** - 只包含必要的包
 - 🚀 **开箱即用** - 简化配置，快速启动
+- ❌ **零 OpenAI 依赖** - 完全移除 @ai-sdk/openai
 - ❌ **零 MCP 依赖** - 完全移除 modelcontextprotocol
 
 ## 🚀 功能特性
 
-- 🔍 **智能问答** - 基于文档知识库的 RAG 查询（DeepSeek 驱动）
+- 🔍 **智能问答** - 基于文档知识库的 RAG 查询（纯 DeepSeek 驱动）
 - 📄 **文档管理** - 动态添加和索引文档  
 - 💬 **直接对话** - 与 DeepSeek 模型直接交互
 - 🛠️ **工具接口** - RESTful 工具调用 API
 - 🌐 **Web 兼容** - 传统 HTTP 接口
-- 📊 **向量搜索** - 高效的语义搜索
+- 📊 **向量搜索** - 高效的语义搜索（DeepSeek 嵌入）
 
 ## 🏗️ 项目结构
 
 ```
 mastra-rag-demo/
 ├── src/
-│   ├── index.ts              # 主应用 (Mastra + DeepSeek)
+│   ├── index.ts              # 主应用 (Mastra + Pure DeepSeek)
 │   └── setup-vectordb.ts     # 向量数据库初始化
-├── package.json              # DeepSeek 依赖
+├── package.json              # 纯 DeepSeek 依赖
 ├── tsconfig.json            # TypeScript 配置
 ├── .env.example             # 环境变量
 └── README.md               # 项目文档
@@ -60,19 +61,22 @@ cp .env.example .env
 
 ```env
 # DeepSeek AI 配置
-DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
 
-# OpenAI 配置 (仅用于嵌入模型)
-OPENAI_API_KEY=your_openai_api_key
-
-# 向量数据库配置
-VECTOR_DB_URL=your_vector_db_url
+# PostgreSQL 向量数据库配置
+POSTGRES_CONNECTION_STRING=postgresql://user:password@localhost:5432/vectordb
 
 # 服务器配置
 PORT=3000
 ```
 
-### 4. 启动服务
+### 4. 设置向量数据库
+
+```bash
+npm run vector-setup
+```
+
+### 5. 启动服务
 
 ```bash
 npm run dev
@@ -96,21 +100,28 @@ curl -X POST http://localhost:3000/query \
 ```bash
 curl -X POST http://localhost:3000/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "你好", "system": "友善的助手"}'
+  -d '{"message": "你好"}'
 ```
 
-### 工具列表
+### 添加文档
 ```bash
-curl http://localhost:3000/tools
+curl -X POST http://localhost:3000/documents \
+  -H "Content-Type: application/json" \
+  -d '{"content": "人工智能是一门研究如何让机器模拟人类智能的科学。", "metadata": {"source": "ai_book"}}'
+```
+
+### 获取代理列表
+```bash
+curl http://localhost:3000/agents
 ```
 
 ## 🔧 核心依赖
 
 ```json
 {
-  "@mastra/core": "^0.1.0",
-  "@mastra/rag": "^0.1.0", 
-  "@mastra/vector-db": "^0.1.0",
+  "@mastra/core": "^0.10.8",
+  "@mastra/rag": "^0.10.8", 
+  "@mastra/pg": "^0.12.0",
   "@ai-sdk/deepseek": "^0.0.15",
   "ai": "^3.0.0",
   "express": "^4.18.0",
@@ -119,28 +130,52 @@ curl http://localhost:3000/tools
 }
 ```
 
-**注意**: 完全移除了 `@modelcontextprotocol/sdk` 依赖！
+**重要改进**: 
+- ✅ 完全移除了 `@ai-sdk/openai` 依赖
+- ✅ 完全移除了 `@modelcontextprotocol/sdk` 依赖
+- ✅ 使用纯 DeepSeek 生态系统
 
 ## 🆚 架构对比
 
-### ❌ 之前的复杂方案
+### ❌ 之前的混合方案
 ```
-Mastra + 独立MCP服务器 + @modelcontextprotocol/sdk
-= 多个服务 + 重复代码 + 额外依赖
+Mastra + DeepSeek Chat + OpenAI Embedding + MCP
+= 多个 AI 服务 + 额外依赖 + 混合成本
 ```
 
-### ✅ 现在的简洁方案  
+### ✅ 现在的纯净方案  
 ```
-Mastra Core + DeepSeek + Express
-= 单一服务 + 零冗余 + 纯净实现
+Mastra Core + Pure DeepSeek (Chat + Embedding)
+= 单一 AI 服务 + 零冗余 + 统一成本
 ```
+
+## 🎯 技术栈详情
+
+- **框架**: Mastra Core
+- **LLM**: DeepSeek Chat
+- **嵌入模型**: DeepSeek Embedding  
+- **向量数据库**: PostgreSQL + pgvector
+- **Web 框架**: Express.js
+- **无依赖**: OpenAI, MCP, 其他 AI 服务
 
 ## 💡 最佳实践
 
-1. **合理使用模型** - RAG 用 DeepSeek，嵌入用 OpenAI
-2. **成本控制** - 设置合理的 token 限制
+1. **统一模型源** - 全部使用 DeepSeek 生态，成本可控
+2. **合理向量维度** - DeepSeek 嵌入通常使用 1024 维度
 3. **错误处理** - 实现完善的重试机制
-4. **避免冗余** - 不使用不必要的 MCP 依赖
+4. **避免冗余** - 不使用不必要的第三方 AI 服务
+
+## 🔍 故障排除
+
+### DeepSeek API 问题
+- 确认 API 密钥正确
+- 检查网络连接
+- 验证模型名称 (deepseek-chat, deepseek-embedding)
+
+### 向量数据库问题
+- 确认 PostgreSQL 服务运行
+- 检查 pgvector 扩展已安装
+- 验证连接字符串格式
 
 ## 🤝 贡献
 
@@ -152,4 +187,4 @@ MIT License
 
 ---
 
-**核心理念: 用最简洁的方式实现强大的 RAG 功能！** 🇨🇳🚀
+**核心理念: 用最简洁的纯国产 AI 方式实现强大的 RAG 功能！** 🇨🇳🚀
