@@ -4,25 +4,24 @@
   "description": "Mastra RAG demo with DeepSeek AI - using only DeepSeek models",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "vector-setup": "tsx src/setup-vectordb.ts"
+    "dev": "mastra dev",
+    "build": "mastra build"
   },
   "dependencies": {
-    "@mastra/core": "^0.10.8",
-    "@mastra/rag": "^0.10.8",
-    "@mastra/pg": "^0.12.0",
-    "@ai-sdk/deepseek": "^0.0.15",
+    "@ai-sdk/deepseek": "^0.2.14",
+    "@mastra/core": "^0.10.10",
+    "@mastra/pg": "^0.12.1",
+    "@mastra/rag": "^1.0.1",
     "ai": "^3.0.0",
+    "cors": "^2.8.0",
     "dotenv": "^16.0.0",
-    "express": "^4.18.0",
-    "cors": "^2.8.0"
+    "express": "^4.18.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.0",
     "@types/cors": "^2.8.0",
+    "@types/express": "^4.17.0",
     "@types/node": "^20.0.0",
+    "mastra": "^0.10.10",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
