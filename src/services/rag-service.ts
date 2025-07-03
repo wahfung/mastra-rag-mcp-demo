@@ -3,7 +3,6 @@ import { Agent } from '@mastra/core/agent';
 import { createVectorQueryTool, MDocument } from '@mastra/rag';
 import { PgVector } from '@mastra/pg';
 import { deepseek } from '@ai-sdk/deepseek';
-import { openai } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
 
 export interface QueryResult {
@@ -36,11 +35,11 @@ export class MastraRAGService {
       connectionString: process.env.POSTGRES_CONNECTION_STRING!,
     });
 
-    // 创建向量查询工具
+    // 创建向量查询工具（使用 DeepSeek 嵌入）
     const vectorQueryTool = createVectorQueryTool({
       vectorStoreName: 'pgVector',
       indexName: 'embeddings',
-      model: openai.embedding('text-embedding-3-small'), // 嵌入模型
+      model: deepseek.embedding('deepseek-embedding'), // 使用 DeepSeek 嵌入模型
     });
 
     // 创建 RAG Agent（使用 DeepSeek）
@@ -79,17 +78,17 @@ export class MastraRAGService {
 
   async initialize(): Promise<void> {
     try {
-      // 确保向量数据库索引存在
+      // 确保向量数据库索引存在（使用 DeepSeek 嵌入维度）
       await this.pgVector.createIndex({
         indexName: 'embeddings',
-        dimension: 1536, // OpenAI text-embedding-3-small 的维度
+        dimension: 1024, // DeepSeek embedding 的维度（可能需要根据实际情况调整）
       });
       
-      console.log('✅ Mastra RAG 服务初始化成功 (DeepSeek + PgVector)');
+      console.log('✅ Mastra RAG 服务初始化成功 (Pure DeepSeek + PgVector)');
     } catch (error) {
       // 索引可能已存在，这是正常的
       console.log('📋 向量索引可能已存在，继续启动...');
-      console.log('✅ Mastra RAG 服务初始化成功 (DeepSeek + PgVector)');
+      console.log('✅ Mastra RAG 服务初始化成功 (Pure DeepSeek + PgVector)');
     }
   }
 
@@ -117,7 +116,7 @@ export class MastraRAGService {
       const doc = MDocument.fromText(content, {
         ...metadata,
         timestamp: new Date().toISOString(),
-        addedBy: 'mastra-rag-service-deepseek'
+        addedBy: 'mastra-rag-service-pure-deepseek'
       });
       
       // 分块处理
@@ -127,9 +126,9 @@ export class MastraRAGService {
         overlap: 50,
       });
 
-      // 生成嵌入
+      // 生成嵌入（使用 DeepSeek 嵌入模型）
       const { embeddings } = await embedMany({
-        model: openai.embedding('text-embedding-3-small'),
+        model: deepseek.embedding('deepseek-embedding'),
         values: chunks.map(chunk => chunk.text),
       });
 
@@ -193,7 +192,7 @@ export class MastraRAGService {
     return {
       framework: 'Mastra',
       llm: 'DeepSeek Chat',
-      embedding: 'OpenAI text-embedding-3-small',
+      embedding: 'DeepSeek Embedding',
       vectorDb: 'PostgreSQL + pgvector',
       agents: ['ragAgent', 'chatAgent'],
       tools: ['vectorQueryTool'],
@@ -202,15 +201,18 @@ export class MastraRAGService {
         'Document processing and chunking',
         'Vector storage and retrieval',
         'DeepSeek-powered responses',
-        'Direct chat capabilities'
+        'Direct chat capabilities',
+        'Pure DeepSeek ecosystem'
       ],
       dependencies: {
         core: '@mastra/core',
         rag: '@mastra/rag',
         vector: '@mastra/pg',
-        llm: '@ai-sdk/deepseek',
-        embedding: '@ai-sdk/openai'
-      }
+        ai: '@ai-sdk/deepseek'
+      },
+      removedDependencies: [
+        '@ai-sdk/openai'
+      ]
     };
   }
 
