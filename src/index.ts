@@ -1,9 +1,17 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { mastra, ragAgent, chatAgent } from './mastra';
 
+// 加载环境变量
 dotenv.config();
+
+// 动态导入 Mastra 实例
+import mastraModule from './mastra/index';
+
+// 获取 Mastra 实例和 agents
+const mastra = mastraModule.default || mastraModule;
+const ragAgent = mastraModule.ragAgent;
+const chatAgent = mastraModule.chatAgent;
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -154,5 +162,5 @@ async function startServer() {
 
 startServer();
 
-// 导出 Mastra 实例供其他模块使用
+// 导出实例供其他模块使用
 export { mastra, ragAgent, chatAgent };
