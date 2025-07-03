@@ -1,11 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { Mastra } from '@mastra/core';
-import { Agent } from '@mastra/core/agent';
-import { createVectorQueryTool } from '@mastra/rag';
-import { PgVector } from '@mastra/pg';
-import { deepseek } from '@ai-sdk/deepseek';
+import { mastra, ragAgent, chatAgent } from './mastra';
 
 dotenv.config();
 
@@ -14,48 +10,6 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-
-// 设置向量数据库
-const pgVector = new PgVector({
-  connectionString: process.env.POSTGRES_CONNECTION_STRING!
-});
-
-// 创建向量查询工具（使用 DeepSeek 的嵌入模型）
-const vectorQueryTool = createVectorQueryTool({
-  vectorStoreName: 'pgVector',
-  indexName: 'embeddings',
-  model: deepseek.embedding('deepseek-embedding'), // 使用 DeepSeek 嵌入模型
-});
-
-// 创建 RAG Agent（使用 DeepSeek）
-export const ragAgent = new Agent({
-  name: 'RAG Agent',
-  instructions: `你是一个有用的AI助手，能够基于提供的上下文信息回答问题。
-  请保持回答简洁、准确和相关。
-  如果上下文中没有足够的信息来完全回答问题，请明确说明。`,
-  model: deepseek('deepseek-chat'), // 使用 DeepSeek 作为主要模型
-  tools: {
-    vectorQueryTool,
-  },
-});
-
-// 创建直接 DeepSeek 对话 Agent
-export const chatAgent = new Agent({
-  name: 'Chat Agent',
-  instructions: '你是一个友善、有用的AI助手。请用简洁、准确的方式回答问题。',
-  model: deepseek('deepseek-chat'),
-});
-
-// 初始化 Mastra
-export const mastra = new Mastra({
-  agents: {
-    ragAgent,
-    chatAgent,
-  },
-  vectors: {
-    pgVector,
-  },
-});
 
 // REST API 端点
 app.get('/health', (req, res) => {
@@ -190,6 +144,7 @@ async function startServer() {
       console.log(`  - 嵌入: DeepSeek Embedding`);
       console.log(`  - 向量数据库: PostgreSQL + pgvector`);
       console.log(`  - 无 OpenAI 依赖 ✅`);
+      console.log(`  - Mastra CLI 兼容 ✅`);
     });
   } catch (error) {
     console.error('服务器启动失败:', error);
@@ -198,3 +153,6 @@ async function startServer() {
 }
 
 startServer();
+
+// 导出 Mastra 实例供其他模块使用
+export { mastra, ragAgent, chatAgent };
