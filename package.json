@@ -1,7 +1,7 @@
 {
-  "name": "deepseek-rag-demo",
+  "name": "mastra-deepseek-rag-demo",
   "version": "1.0.0",
-  "description": "A clean RAG demo using DeepSeek AI with custom implementation",
+  "description": "Mastra RAG demo with DeepSeek AI - using correct Mastra packages",
   "main": "src/index.ts",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -10,30 +10,30 @@
     "vector-setup": "tsx src/setup-vectordb.ts"
   },
   "dependencies": {
+    "@mastra/core": "^0.10.8",
+    "@mastra/rag": "^0.10.8",
+    "@mastra/pg": "^0.12.0",
     "@ai-sdk/deepseek": "^0.0.15",
+    "@ai-sdk/openai": "^0.0.56",
     "ai": "^3.0.0",
     "dotenv": "^16.0.0",
     "express": "^4.18.0",
-    "cors": "^2.8.0",
-    "openai": "^4.0.0",
-    "uuid": "^9.0.0",
-    "@pinecone-database/pinecone": "^2.0.0"
+    "cors": "^2.8.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.0",
     "@types/cors": "^2.8.0",
     "@types/node": "^20.0.0",
-    "@types/uuid": "^9.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
   "keywords": [
+    "mastra",
     "deepseek",
     "rag",
     "ai",
     "typescript",
-    "vector-search",
-    "pinecone"
+    "vector-search"
   ],
   "author": "wahfung",
   "license": "MIT"
