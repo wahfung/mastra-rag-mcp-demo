@@ -1,7 +1,8 @@
 import { Mastra } from '@mastra/core';
 import { RAGEngine } from '@mastra/rag';
 import { VectorDB } from '@mastra/vector-db';
-import { OpenAI } from 'openai';
+import { deepseek } from '@ai-sdk/deepseek';
+import { generateText } from 'ai';
 
 export interface QueryResult {
   answer: string;
@@ -11,27 +12,28 @@ export interface QueryResult {
     similarity?: number;
   }>;
   processingTime: number;
+  model: string;
 }
 
 export interface DocumentResult {
   id: string;
   chunks: number;
   processed: boolean;
+  timestamp: string;
 }
 
 export class MastraRAGService {
   private mastra: Mastra;
   private ragEngine: RAGEngine;
   private vectorDB: VectorDB;
-  private openai: OpenAI;
+  private llmModel: any;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
-    });
+    // 使用 DeepSeek 模型
+    this.llmModel = deepseek('deepseek-chat');
     
     this.vectorDB = new VectorDB({
-      provider: 'pinecone', // 或其他向量数据库
+      provider: 'pinecone',
       config: {
         url: process.env.VECTOR_DB_URL
       }
@@ -40,13 +42,22 @@ export class MastraRAGService {
     this.ragEngine = new RAGEngine({
       vectorDB: this.vectorDB,
       embedder: {
-        provider: 'openai',
-        model: 'text-embedding-3-small'
+        provider: 'openai', // 仅用于嵌入
+        model: 'text-embedding-3-small',
+        apiKey: process.env.OPENAI_API_KEY
       },
       llm: {
-        provider: 'openai',
-        model: 'gpt-4',
-        client: this.openai
+        provider: 'custom', // 使用自定义 DeepSeek
+        model: 'deepseek-chat',
+        generateFn: async (prompt: string, options: any) => {
+          const { text } = await generateText({
+            model: this.llmModel,
+            prompt,
+            temperature: options.temperature || 0.7,
+            maxTokens: options.maxTokens || 1000,
+          });
+          return text;
+        }
       }
     });
 
@@ -61,7 +72,7 @@ export class MastraRAGService {
     try {
       await this.vectorDB.initialize();
       await this.ragEngine.initialize();
-      console.log('✅ Mastra RAG 服务初始化成功');
+      console.log('✅ Mastra RAG 服务初始化成功 (DeepSeek)');
     } catch (error) {
       console.error('❌ Mastra RAG 服务初始化失败:', error);
       throw error;
@@ -72,24 +83,25 @@ export class MastraRAGService {
     const startTime = Date.now();
     
     try {
-      // 使用 RAG 引擎进行查询
-      const result = await this.ragEngine.query({
+      // 使用 RAG 引擎进行搜索
+      const searchResults = await this.ragEngine.search({
         query: question,
         topK: 5,
         threshold: 0.7
       });
 
-      // 生成回答
-      const answer = await this.generateAnswer(question, result.sources);
+      // 使用 DeepSeek 生成回答
+      const answer = await this.generateAnswer(question, searchResults);
 
       return {
         answer,
-        sources: result.sources.map(source => ({
+        sources: searchResults.map(source => ({
           content: source.content,
           metadata: source.metadata,
           similarity: source.similarity
         })),
-        processingTime: Date.now() - startTime
+        processingTime: Date.now() - startTime,
+        model: 'deepseek-chat'
       };
     } catch (error) {
       console.error('查询错误:', error);
@@ -103,14 +115,16 @@ export class MastraRAGService {
         content,
         metadata: {
           ...metadata,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          addedBy: 'mastra-rag-service-deepseek'
         }
       });
 
       return {
         id: result.id,
-        chunks: result.chunks,
-        processed: true
+        chunks: result.chunks || 1,
+        processed: true,
+        timestamp: new Date().toISOString()
       };
     } catch (error) {
       console.error('文档添加错误:', error);
@@ -121,27 +135,48 @@ export class MastraRAGService {
   private async generateAnswer(question: string, sources: any[]): Promise<string> {
     const context = sources.map(source => source.content).join('\n\n');
     
-    const prompt = `
-    基于以下上下文信息回答问题。如果上下文中没有相关信息，请说明无法找到相关信息。
+    try {
+      const { text: answer } = await generateText({
+        model: this.llmModel,
+        system: '你是一个有用的AI助手，能够基于提供的上下文信息回答问题。如果上下文中没有相关信息，请说明无法找到相关信息。',
+        prompt: `基于以下上下文信息回答问题：
 
-    上下文:
-    ${context}
+上下文:
+${context}
 
-    问题: ${question}
+问题: ${question}
 
-    回答:
-    `;
+请提供准确、有用的回答：`,
+        temperature: 0.7,
+        maxTokens: 1000,
+      });
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: '你是一个有用的AI助手，能够基于提供的上下文信息回答问题。' },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000
-    });
+      return answer;
+    } catch (error) {
+      console.error('DeepSeek 生成回答错误:', error);
+      throw new Error(`生成回答失败: ${error.message}`);
+    }
+  }
 
-    return response.choices[0].message.content || '无法生成回答';
+  // 新增：直接与 DeepSeek 对话的方法
+  async chat(message: string, system?: string): Promise<{ response: string; model: string; timestamp: string }> {
+    try {
+      const { text: response } = await generateText({
+        model: this.llmModel,
+        system: system || '你是一个有用的AI助手。',
+        prompt: message,
+        temperature: 0.7,
+        maxTokens: 1000,
+      });
+
+      return {
+        response,
+        model: 'deepseek-chat',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('DeepSeek 对话错误:', error);
+      throw new Error(`对话失败: ${error.message}`);
+    }
   }
 }
