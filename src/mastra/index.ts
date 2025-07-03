@@ -3,14 +3,18 @@ import { Agent } from '@mastra/core/agent';
 import { createVectorQueryTool } from '@mastra/rag';
 import { PgVector } from '@mastra/pg';
 import { deepseek } from '@ai-sdk/deepseek';
-import dotenv from 'dotenv';
 
-// 加载环境变量
-dotenv.config();
+// 环境变量检查
+const connectionString = process.env.POSTGRES_CONNECTION_STRING || 'postgresql://localhost:5432/mastra';
+const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+
+if (!deepseekApiKey) {
+  console.warn('警告: DEEPSEEK_API_KEY 环境变量未设置');
+}
 
 // 设置向量数据库
 const pgVector = new PgVector({
-  connectionString: process.env.POSTGRES_CONNECTION_STRING || 'postgresql://localhost:5432/mastra'
+  connectionString
 });
 
 // 创建向量查询工具（使用 DeepSeek 嵌入）
@@ -39,7 +43,7 @@ const chatAgent = new Agent({
   model: deepseek('deepseek-chat'),
 });
 
-// 创建 Mastra 实例
+// 创建并导出 Mastra 实例
 const mastra = new Mastra({
   agents: {
     ragAgent,
@@ -50,8 +54,15 @@ const mastra = new Mastra({
   },
 });
 
-// 导出所有需要的内容
-export { mastra, ragAgent, chatAgent, pgVector };
+// CommonJS 兼容的导出
+module.exports = mastra;
+module.exports.mastra = mastra;
+module.exports.ragAgent = ragAgent;
+module.exports.chatAgent = chatAgent;
+module.exports.pgVector = pgVector;
+module.exports.default = mastra;
 
-// 默认导出 Mastra 实例（Mastra CLI 期望的格式）
+// ES6 模块导出
+export { ragAgent, chatAgent, pgVector };
 export default mastra;
+export const exportedMastra = mastra;
