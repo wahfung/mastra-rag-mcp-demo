@@ -34,7 +34,6 @@ const mastra = new Mastra({
         const startTime = Date.now();
         
         try {
-          // 使用 Mastra RAG 引擎查询
           const ragEngine = mastra.getEngine('rag') as RAGEngine;
           const searchResults = await ragEngine.search({
             query: question,
@@ -42,21 +41,12 @@ const mastra = new Mastra({
             threshold: 0.7
           });
 
-          // 构建上下文
           const context = searchResults.map(result => result.content).join('\n\n');
           
-          // 使用 DeepSeek 生成回答
           const { text: answer } = await generateText({
             model: llmModel,
             system: '你是一个有用的AI助手，能够基于提供的上下文信息回答问题。如果上下文中没有相关信息，请说明无法找到相关信息。',
-            prompt: `基于以下上下文信息回答问题：
-
-上下文:
-${context}
-
-问题: ${question}
-
-请提供准确、有用的回答：`,
+            prompt: `基于以下上下文信息回答问题：\n\n上下文:\n${context}\n\n问题: ${question}\n\n请提供准确、有用的回答：`,
             temperature: 0.7,
             maxTokens: 1000,
           });
@@ -148,20 +138,18 @@ ${context}
   engines: {
     rag: new RAGEngine({
       vectorDB: {
-        provider: 'pinecone', // 或其他向量数据库
+        provider: 'pinecone',
         config: {
           url: process.env.VECTOR_DB_URL
         }
       },
       embedder: {
-        // 注意：可能需要配置兼容的嵌入模型
-        provider: 'openai', // 或其他嵌入提供商
+        provider: 'openai', // 仅用于嵌入
         model: 'text-embedding-3-small',
-        apiKey: process.env.OPENAI_API_KEY // 仅用于嵌入
+        apiKey: process.env.OPENAI_API_KEY
       },
       llm: {
-        // 使用 DeepSeek 作为 LLM
-        provider: 'custom',
+        provider: 'custom', // 使用 DeepSeek
         model: 'deepseek-chat',
         generateFn: async (prompt: string, options: any) => {
           const { text } = await generateText({
@@ -177,7 +165,7 @@ ${context}
   }
 });
 
-// 传统 REST API 端点（用于 Web 应用）
+// REST API 端点
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
@@ -198,10 +186,7 @@ app.post('/query', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('查询错误:', error);
-    res.status(500).json({ 
-      error: '查询失败',
-      details: error.message 
-    });
+    res.status(500).json({ error: '查询失败', details: error.message });
   }
 });
 
@@ -216,14 +201,10 @@ app.post('/documents', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('文档添加错误:', error);
-    res.status(500).json({ 
-      error: '文档添加失败',
-      details: error.message 
-    });
+    res.status(500).json({ error: '文档添加失败', details: error.message });
   }
 });
 
-// DeepSeek 直接对话端点
 app.post('/chat', async (req, res) => {
   try {
     const { message, system } = req.body;
@@ -235,14 +216,11 @@ app.post('/chat', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('对话错误:', error);
-    res.status(500).json({ 
-      error: '对话失败',
-      details: error.message 
-    });
+    res.status(500).json({ error: '对话失败', details: error.message });
   }
 });
 
-// 工具接口 (类 MCP)
+// 工具接口
 app.get('/tools', async (req, res) => {
   try {
     const tools = mastra.tools.map(tool => ({
@@ -269,10 +247,7 @@ app.post('/tools/:toolName', async (req, res) => {
     res.json({ result });
   } catch (error) {
     console.error('工具执行错误:', error);
-    res.status(500).json({ 
-      error: '工具执行失败',
-      details: error.message 
-    });
+    res.status(500).json({ error: '工具执行失败', details: error.message });
   }
 });
 
@@ -298,6 +273,7 @@ async function startServer() {
       console.log(`\n🤖 AI 模型: DeepSeek Chat`);
       console.log(`📦 提供商: @ai-sdk/deepseek`);
       console.log(`🔧 框架: Mastra + AI SDK`);
+      console.log(`✨ 状态: 无 modelcontextprotocol 依赖`);
     });
   } catch (error) {
     console.error('服务器启动失败:', error);
