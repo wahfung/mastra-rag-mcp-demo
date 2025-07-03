@@ -6,7 +6,6 @@ import { Agent } from '@mastra/core/agent';
 import { createVectorQueryTool } from '@mastra/rag';
 import { PgVector } from '@mastra/pg';
 import { deepseek } from '@ai-sdk/deepseek';
-import { openai } from '@ai-sdk/openai';
 
 dotenv.config();
 
@@ -21,11 +20,11 @@ const pgVector = new PgVector({
   connectionString: process.env.POSTGRES_CONNECTION_STRING!
 });
 
-// 创建向量查询工具
+// 创建向量查询工具（使用 DeepSeek 的嵌入模型）
 const vectorQueryTool = createVectorQueryTool({
   vectorStoreName: 'pgVector',
   indexName: 'embeddings',
-  model: openai.embedding('text-embedding-3-small'), // 用于嵌入
+  model: deepseek.embedding('deepseek-embedding'), // 使用 DeepSeek 嵌入模型
 });
 
 // 创建 RAG Agent（使用 DeepSeek）
@@ -64,7 +63,7 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     llm: 'deepseek-chat',
-    embedding: 'text-embedding-3-small',
+    embedding: 'deepseek-embedding',
     vectorDb: 'postgres-pgvector',
     framework: 'mastra'
   });
@@ -157,6 +156,7 @@ app.get('/agents', (req, res) => {
         name: 'ragAgent',
         description: 'RAG查询代理（DeepSeek + 向量搜索）',
         model: 'deepseek-chat',
+        embedding: 'deepseek-embedding',
         tools: ['vectorQueryTool']
       },
       {
@@ -174,7 +174,7 @@ app.get('/agents', (req, res) => {
 // 启动服务器
 async function startServer() {
   try {
-    console.log('🚀 启动 Mastra RAG Demo (DeepSeek)...');
+    console.log('🚀 启动 Mastra RAG Demo (Pure DeepSeek)...');
     
     app.listen(port, () => {
       console.log(`✅ 服务器运行在端口 ${port}`);
@@ -187,9 +187,9 @@ async function startServer() {
       console.log(`\n🔧 技术栈:`);
       console.log(`  - 框架: Mastra`);
       console.log(`  - LLM: DeepSeek Chat`);
-      console.log(`  - 嵌入: OpenAI text-embedding-3-small`);
+      console.log(`  - 嵌入: DeepSeek Embedding`);
       console.log(`  - 向量数据库: PostgreSQL + pgvector`);
-      console.log(`  - 无 modelcontextprotocol 依赖 ✅`);
+      console.log(`  - 无 OpenAI 依赖 ✅`);
     });
   } catch (error) {
     console.error('服务器启动失败:', error);
