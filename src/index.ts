@@ -122,11 +122,33 @@ app.post('/documents', async (req, res) => {
   }
 });
 
-// Mastra 自动暴露的 MCP 端点（如果支持）
-if (mastra.getMCPRouter) {
-  app.use('/mcp', mastra.getMCPRouter());
-  console.log('🔌 Mastra MCP 端点已启用');
-}
+// Mastra 可能内置的 MCP 支持
+// 注意：这里不再依赖外部 modelcontextprotocol 包
+app.get('/tools', async (req, res) => {
+  try {
+    const tools = mastra.tools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema
+    }));
+    res.json({ tools });
+  } catch (error) {
+    res.status(500).json({ error: '获取工具列表失败' });
+  }
+});
+
+app.post('/tools/:toolName', async (req, res) => {
+  try {
+    const { toolName } = req.params;
+    const args = req.body;
+    
+    const result = await mastra.executeTool(toolName, args);
+    res.json({ result });
+  } catch (error) {
+    console.error('工具执行错误:', error);
+    res.status(500).json({ error: '工具执行失败' });
+  }
+});
 
 // 启动服务器
 async function startServer() {
@@ -138,14 +160,14 @@ async function startServer() {
       console.log(`📊 健康检查: http://localhost:${port}/health`);
       console.log(`🔍 RAG 查询: POST http://localhost:${port}/query`);
       console.log(`📄 文档上传: POST http://localhost:${port}/documents`);
-      
-      if (mastra.getMCPRouter) {
-        console.log(`🔌 MCP 端点: http://localhost:${port}/mcp`);
-      }
+      console.log(`🛠️  工具列表: GET http://localhost:${port}/tools`);
+      console.log(`⚡ 工具执行: POST http://localhost:${port}/tools/:toolName`);
       
       console.log(`\n🛠️  可用工具:`);
       console.log(`  - query_knowledge: 智能问答`);
       console.log(`  - add_document: 文档管理`);
+      
+      console.log(`\n📝 注意: 使用 Mastra 内置功能，无需额外的 MCP 依赖`);
     });
   } catch (error) {
     console.error('服务器启动失败:', error);
