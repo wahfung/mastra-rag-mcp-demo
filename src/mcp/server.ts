@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { deepseek } from '@ai-sdk/deepseek';
-import { generateText } from 'ai';
 import { MastraRAGService } from '../services/rag-service';
 
 // 简化的 MCP 兼容服务器，无需外部 SDK
