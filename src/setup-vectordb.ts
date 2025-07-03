@@ -1,51 +1,50 @@
-import { VectorDB } from '@mastra/vector-db';
+import { PgVector } from '@mastra/pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 async function setupVectorDB() {
-  console.log('🔧 设置向量数据库...');
-  console.log('🤖 配置: Mastra + DeepSeek AI (完全无 MCP 依赖)');
+  console.log('🔧 设置 PostgreSQL + pgvector 数据库...');
+  console.log('🤖 配置: Mastra + DeepSeek AI + PostgreSQL');
   
   try {
-    const vectorDB = new VectorDB({
-      provider: 'pinecone',
-      config: {
-        url: process.env.VECTOR_DB_URL
-      }
+    // 检查必要的环境变量
+    if (!process.env.POSTGRES_CONNECTION_STRING) {
+      throw new Error('POSTGRES_CONNECTION_STRING 环境变量未设置');
+    }
+
+    const pgVector = new PgVector({
+      connectionString: process.env.POSTGRES_CONNECTION_STRING
     });
 
-    await vectorDB.initialize();
-    console.log('✅ 向量数据库连接成功');
+    console.log('✅ 正在连接到 PostgreSQL...');
     
     // 创建索引
-    await vectorDB.createIndex({
-      name: 'mastra-rag-deepseek-clean',
+    await pgVector.createIndex({
+      indexName: 'embeddings',
       dimension: 1536, // OpenAI text-embedding-3-small 维度
-      metric: 'cosine',
-      metadata: {
-        description: 'Mastra RAG Demo with DeepSeek AI - Clean Implementation',
-        created: new Date().toISOString(),
-        llm: 'deepseek-chat',
-        embedder: 'text-embedding-3-small',
-        dependencies: 'NO-modelcontextprotocol',
-        clean: true
-      }
     });
 
-    console.log('✅ 向量数据库索引创建完成');
-    console.log('📊 索引名称: mastra-rag-deepseek-clean');
-    console.log('📐 嵌入维度: 1536 (OpenAI)');
+    console.log('✅ 向量数据库设置完成');
+    console.log('📊 索引名称: embeddings');
+    console.log('📐 嵌入维度: 1536 (OpenAI text-embedding-3-small)');
     console.log('🤖 LLM 模型: DeepSeek Chat');
-    console.log('🎯 距离度量: cosine');
-    console.log('✨ 实现: 纯净版本（完全无 modelcontextprotocol）');
+    console.log('🗄️ 向量数据库: PostgreSQL + pgvector');
+    console.log('🔧 框架: Mastra');
+    
+    // 断开连接
+    await pgVector.disconnect();
+    console.log('✅ 数据库连接已关闭');
     
   } catch (error) {
     console.error('❌ 向量数据库设置失败:', error);
     console.log('\n🔍 故障排除提示:');
-    console.log('1. 检查 VECTOR_DB_URL 环境变量');
-    console.log('2. 确认向量数据库服务运行正常');
-    console.log('3. 验证网络连接');
+    console.log('1. 检查 POSTGRES_CONNECTION_STRING 环境变量');
+    console.log('   格式: postgresql://user:password@host:port/database');
+    console.log('2. 确认 PostgreSQL 服务运行正常');
+    console.log('3. 确认已安装 pgvector 扩展:');
+    console.log('   CREATE EXTENSION IF NOT EXISTS vector;');
+    console.log('4. 验证网络连接和数据库权限');
     process.exit(1);
   }
 }
